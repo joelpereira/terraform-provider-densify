@@ -29,9 +29,7 @@ type densifyDataSourceCloud struct {
 }
 
 // densifyRecoModel maps Densify Recommendation schema data.
-// type densifyRecoModel struct {
 type densifyDataSourceCloudModel struct {
-	// EntityId   types.Int64  `tfsdk:"entityId"`
 	EntityId            types.String  `tfsdk:"entity_id"`
 	Name                types.String  `tfsdk:"name"`
 	CurrentInstance     types.String  `tfsdk:"current_type"`

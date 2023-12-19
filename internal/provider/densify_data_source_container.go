@@ -28,13 +28,7 @@ type densifyDataSourceContainer struct {
 	client *densify.Client
 }
 
-// densifyDataSourceModel maps the data source schema data.
-// type densifyDataSourceModel struct {
-// 	Recommendation []densifyRecoModel `tfsdk:"recommendation"`
-// }
-
 // densifyRecoModel maps coffees schema data.
-// type densifyRecoModel struct {
 type densifyDataSourcePodModel struct {
 	// EntityId   types.Int64  `tfsdk:"entityId"`
 	EntityId types.String `tfsdk:"entity_id"`
