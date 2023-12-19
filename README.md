@@ -66,7 +66,6 @@ You can find the generated documentation in the [docs folder](docs/).
 ## Examples 
 * [Cloud Optimization Test Output](examples/data-sources/cloud-optimization-test-output)
 * [AWS EC2](examples/data-sources/aws-ec2)
-* [Azure VM](examples/data-sources/azure-vm)
 * [Kubernetes Deployment](examples/data-sources/k8s-deployment)
 * [Kubernetes Optimization Test Output](examples/data-sources/k8s-optimization-test-output)
 
