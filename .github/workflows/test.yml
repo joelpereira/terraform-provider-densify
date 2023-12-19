@@ -55,7 +55,7 @@ jobs:
 
           # Optional: if set to true, then all caching functionality will be completely disabled,
           #           takes precedence over all other caching options.
-          # skip-cache: true
+          skip-cache: true
 
           # Optional: if set to true, then the action won't cache or restore ~/go/pkg.
           # skip-pkg-cache: true
@@ -65,8 +65,6 @@ jobs:
 
           # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
           # install-mode: "goinstall"
-          
-          skip-go-installation: true
 
   generate:
     runs-on: ubuntu-latest
