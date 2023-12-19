@@ -1,4 +1,9 @@
-<img src="https://www.densify.com/wp-content/uploads/densify.png" width="300">
+![GitHub release (with filter)](https://img.shields.io/github/v/release/joelpereira/terraform-provider-densify)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/joelpereira/terraform-provider-densify/test.yml)
+![GitHub issues](https://img.shields.io/github/issues/joelpereira/terraform-provider-densify)
+![GitHub](https://img.shields.io/github/license/joelpereira/terraform-provider-densify)
+
+<img src="https://www.densify.com/wp-content/uploads/densify.png" width="250">
 
 # Densify Terraform Provider
 This provider interfaces between Densify machine learning analytics and Terraform templates.
