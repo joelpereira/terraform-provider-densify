@@ -3,12 +3,12 @@
 page_title: "densify Provider"
 subcategory: ""
 description: |-
-  Retrieve Densify Recommendations for cloud or container resources.
+  Retrieve right-sizing optimizations directly from the Densify API for cloud and/or container resources.
 ---
 
 # densify Provider
 
-Retrieve Densify Recommendations for cloud or container resources.
+Retrieve right-sizing optimizations directly from the Densify API for cloud and/or container resources.
 
 
 
