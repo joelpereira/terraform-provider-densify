@@ -73,8 +73,7 @@ func (p *densifyProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		Description: "Retrieve right-sizing optimizations directly from the Densify API for cloud and/or container resources.",
 		Attributes: map[string]schema.Attribute{
 			"densify_instance": schema.StringAttribute{
-				Optional: true,
-				// Required: true,
+				Optional:    true,
 				Description: "URI for your Densify instance. May also be provided via DENSIFY_INSTANCE. Ex. https://instance.densify.com:8443",
 			},
 			"username": schema.StringAttribute{
@@ -91,7 +90,7 @@ func (p *densifyProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Description: "Which Cloud Service Provider (CSP) / technology platform to use for the Densify API. May also be provided via DENSIFY_TECH_PLATFORM. Accepted values are: aws, azure, gcp, k8s.",
 			},
 
-			// cloud parameters
+			// cloud parameters.
 			"account_number": schema.StringAttribute{
 				Optional:    true,
 				Description: "The CSP (Cloud Service Provider) account number to check for a recommendation.",
@@ -113,7 +112,7 @@ func (p *densifyProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Description: "Prevent connectivity/search errors from interupting the terraform deployment.",
 			},
 
-			// k8s parameters
+			// k8s parameters.
 			"cluster": schema.StringAttribute{
 				Optional:    true,
 				Description: "Kubernetes namespace to look for a recommendation in Densify.",
@@ -204,7 +203,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
-	// KUBERNETES/CONTAINERS
+	// KUBERNETES/CONTAINERS.
 	if strings.ToLower(config.TechPlatform.ValueString()) == "k8s" || strings.ToLower(config.TechPlatform.ValueString()) == "kubernetes" {
 		if config.K8sCluster.IsUnknown() {
 			resp.Diagnostics.AddAttributeError(
@@ -246,7 +245,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_USERNAME environment variable.",
 			)
 		}
-	} else { // CLOUD
+	} else { // CLOUD.
 		if config.AccountName.IsUnknown() {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("account_name"),
@@ -269,8 +268,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	// Default values to environment variables, but override
-	// with Terraform configuration value if set.
+	// Default values to environment variables, but override with Terraform configuration value if set.
 
 	instance := os.Getenv("DENSIFY_INSTANCE")
 	username := os.Getenv("DENSIFY_USERNAME")
@@ -352,8 +350,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		fallbackMemLim = config.K8sFallbackMemLim.ValueString()
 	}
 
-	// If any of the expected configurations are missing, return
-	// errors with provider-specific guidance.
+	// If any of the expected configurations are missing, return errors with provider-specific guidance.
 
 	if instance == "" {
 		resp.Diagnostics.AddAttributeError(
@@ -395,7 +392,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
-	// KUBERNETES/CONTAINERS
+	// KUBERNETES/CONTAINERS.
 	if strings.ToLower(techPlatform) == "k8s" || strings.ToLower(techPlatform) == "kubernetes" {
 		if cluster == "" {
 			resp.Diagnostics.AddAttributeError(
@@ -479,7 +476,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 	ctx = tflog.SetField(ctx, "densify_fallback_mem_lim", fallbackMemLim)
 	tflog.Debug(ctx, "Creating Densify API client")
 
-	// Create a new Densify client using the configuration values
+	// Create a new Densify client using the configuration values.
 	client, err := densify.NewClient(&instance, &username, &password)
 	if err != nil && !skipErrors {
 		resp.Diagnostics.AddError(
@@ -491,7 +488,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	// set configuration for densify api
+	// set configuration for densify api.
 	densifyAPIQuery := densify.DensifyAPIQuery{
 		AnalysisTechnology: techPlatform,
 		AccountName:        accountName,
@@ -499,7 +496,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		SystemName:         systemName,
 		FallbackInstance:   fallbackInstanceType,
 		SkipErrors:         skipErrors,
-		// if it's a kubernetes resource:
+
 		K8sCluster:        cluster,
 		K8sNamespace:      namespace,
 		K8sControllerType: controllerType,
@@ -525,8 +522,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 	tflog.Debug(ctx, "Validated Densify client query")
 
-	// Make the Densify client available during DataSource and Resource
-	// type Configure methods.
+	// Make the Densify client available during DataSource and Resource type Configure methods.
 	resp.DataSourceData = client
 	resp.ResourceData = client
 
