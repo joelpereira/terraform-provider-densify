@@ -71,6 +71,11 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: true
+      - name: go get
+        run: |
+          go get .
+          go get github.com/joelpereira/densify-api-client-go
+          go get github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
       - run: go generate ./...
       - name: git diff
         run: |
