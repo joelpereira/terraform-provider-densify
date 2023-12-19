@@ -24,6 +24,7 @@ The result is next-generation resource optimization with the elimination of hard
 
 ## Requirements
 - Densify service account, which is provided with a Densify subscription or free trial (www.densify.com/product/trial)
+- Go (v1.21+ for building the provider only)
 
 ## Usage
 
@@ -40,15 +41,16 @@ provider "densify" {
   # credentials and other parameters can be passed in to the Densify Provider as environment variables
 
   tech_platform = "aws"
-  account_number = "9876543210"
+  account_number = "1234567890"
   system_name = "system-name-321"
 }
+data "densify_cloud" "optimization" {}
 ```
 
 Then we can simply utilize the optimized instance that Densify recommended:
 ```hcl
 ...
-instance_type = densify.data.approved_instance
+instance_type = data.densify_cloud.optimization.recommended_type
 ...
 ```
 
