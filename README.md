@@ -11,6 +11,7 @@ The result is next-generation resource optimization with the elimination of hard
 
 - [Requirements](#requirements)
 - [Usage](#usage)
+- [Documentation](#docs)
 - [Examples](#examples)
 - [Inputs](#inputs)
 - [Outputs](#outputs)
@@ -46,13 +47,16 @@ instance_type = densify.data.approved_instance
 ...
 ```
 
-## Data Sources
+### Data Sources
 There are two data sources available within the Densify Provider:
 | Name | Description | Call |
 |------|-------------|:-------:|
 | Cloud Recommendation | This returns one cloud (AWS/Azure/GCP) recommendation from Densify | _cloud |
 | Container Recommendation | This returns one container (Kubernetes) recommendation from Densify | _container |
 
+## Documentation
+
+You can find the generated documentation in the [docs folder](docs/).
 
 ## Examples 
 * [Cloud Optimization Test Output](examples/data-sources/cloud-optimization-test-output)
