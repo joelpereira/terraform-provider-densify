@@ -65,6 +65,8 @@ jobs:
 
           # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
           # install-mode: "goinstall"
+          
+          skip-go-installation: true
 
   generate:
     runs-on: ubuntu-latest
