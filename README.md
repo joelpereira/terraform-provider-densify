@@ -82,10 +82,10 @@ Inputs for "_cloud" provider call are:
 | username | Densify service account user name (you can request one by contacting your Account Manager or support@densify.com) | String | DENSIFY_USERNAME | Yes |
 | password | Densify service account password  | String | DENSIFY_PASSWORD | Yes |
 | tech_platform | The technology platform or CSP (cloud service provider) being used. Select one of the following options: aws, azure, gcp, kubernetes. | String | DENSIFY_TECH_PLATFORM | Yes |
-| account_number | description | String | DENSIFY_ACCOUNT_NUMBER | Yes for cloud instances |
-| system_name | description | String | DENSIFY_SYSTEM_NAME | Yes for cloud instances |
+| account_number | description | String | DENSIFY_ACCOUNT_NUMBER | Yes |
+| system_name | description | String | DENSIFY_SYSTEM_NAME | Yes |
 | fallback | The fallback/default instance type | String | DENSIFY_FALLBACK | No |
-| skip_errors | The fallback/default instance type | String | DENSIFY_SKIP_ERRORS | No |
+| continue_if_error | Continue if there is an error so that we don't impact the deployment pipeline | Bool | DENSIFY_CONTINUE_IF_ERROR | No |
 
 
 ### Densify Container Recommendation
@@ -97,13 +97,16 @@ Inputs for "_container" provider call are:
 | username | Densify service account user name (you can request one by contacting your Account Manager or support@densify.com) | String | DENSIFY_USERNAME | Yes |
 | password | Densify service account password  | String | DENSIFY_PASSWORD | Yes |
 | tech_platform | The technology platform or CSP (cloud service provider) being used. Select one of the following options: aws, azure, gcp, kubernetes. | String | DENSIFY_TECH_PLATFORM | Yes |
-| cluster | description | String | DENSIFY_CLUSTER | Yes for container recommendations |
-| namespace  | description | String | DENSIFY_NAMESPACE | Yes for container recommendations |
-| controller_type | description | String | DENSIFY_CONTROLLER_TYPE | Yes for container recommendations |
-| pod_name | description | String | DENSIFY_POD_NAME | Yes for container recommendations |
-| container_name | description | String | DENSIFY_CONTAINER_NAME | Yes for container recommendations |
-| fallback | The fallback/default instance type | String | DENSIFY_FALLBACK | No |
-| skip_errors | The fallback/default instance type | String | DENSIFY_SKIP_ERRORS | No |
+| cluster | description | String | DENSIFY_CLUSTER | Yes |
+| namespace  | description | String | DENSIFY_NAMESPACE | Yes |
+| controller_type | description | String | DENSIFY_CONTROLLER_TYPE | Yes |
+| pod_name | description | String | DENSIFY_POD_NAME | Yes |
+| container_name | description | String | DENSIFY_CONTAINER_NAME | Yes |
+| fallback_cpu_req | The fallback/default CPU Request value | String | none | No |
+| fallback_cpu_lim | The fallback/default CPU Limit value | String | none | No |
+| fallback_mem_req | The fallback/default Memory Request value | String | none | No |
+| fallback_mem_lim | The fallback/default Memory Limit value | String | none | No |
+| continue_if_error | Continue if there is an error so that we don't impact the deployment pipeline | Bool | DENSIFY_CONTINUE_IF_ERROR | No |
 
 
 ## Outputs
