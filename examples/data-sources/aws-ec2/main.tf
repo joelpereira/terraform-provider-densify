@@ -11,7 +11,7 @@ provider "densify" {
   account_number = var.account_number
   system_name    = var.name
 
-  # skip_errors = false
+  # continue_if_error = true
   fallback_instance_type = "m4.large" // backup/fallback instance type until there is a recommendation
 }
 data "densify_cloud" "optimization" {}

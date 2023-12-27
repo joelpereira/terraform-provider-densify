@@ -4,14 +4,15 @@ provider "densify" {
   cluster         = "k8master"
   namespace       = "qa-llc"
   controller_type = "deployment"
-  pod_name        = "webserver-deploymentddd"
-
-  skip_errors      = true
+  pod_name        = "webserver-deployment"
   container_name   = "den-web"
+
   fallback_cpu_req = "1200m"
   fallback_cpu_lim = "4000m"
   fallback_mem_req = "4000Mi"
   fallback_mem_lim = "5120Mi"
+
+  # continue_if_error = true
 }
 
 data "densify_container" "optimized" {}

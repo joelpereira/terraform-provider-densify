@@ -16,12 +16,12 @@ provider "densify" {
   pod_name        = "webserver-deployment"
 
   # container_name  = "den-web"
-  # skip_errors = true
+  # continue_if_error = true
 }
 
 data "densify_container" "reco" {}
 
 output "data_container" {
   value = data.densify_container.reco
-  # value = data.densify_container2.reco.containers.den-web.rec_cpu_req
+  # value = data.densify_container.reco.containers.den-web.rec_cpu_req
 }
