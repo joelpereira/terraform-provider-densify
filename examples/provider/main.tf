@@ -15,3 +15,9 @@ provider "densify" {
   account_number   = "account-num"
   system_name      = "system-name"
 }
+data "densify_cloud" "optimization" {}
+
+# output the Densify data source for validation
+output "data_cloud" {
+  value = data.densify_cloud.optimization
+}
