@@ -5,7 +5,7 @@ provider "densify" {
   namespace       = "qa-llc"
   controller_type = "deployment"
   pod_name        = "webserver-deployment"
-  container_name   = "den-web"
+  container_name  = "den-web"
 
   fallback_cpu_req = "1200m"
   fallback_cpu_lim = "4000m"
