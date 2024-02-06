@@ -1,4 +1,3 @@
-![Latest Stable Version](https://img.shields.io/github/v/release/joelpereira/terraform-provider-densify?label=Version)
 ![test action workflow](https://github.com/joelpereira/terraform-provider-densify/actions/workflows/test.yml/badge.svg?branch=main)
 ![GitHub issues](https://img.shields.io/github/issues/joelpereira/terraform-provider-densify)
 ![GitHub](https://img.shields.io/github/license/joelpereira/terraform-provider-densify)
