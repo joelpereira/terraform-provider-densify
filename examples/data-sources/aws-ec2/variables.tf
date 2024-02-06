@@ -1,7 +1,7 @@
 variable "name" {
-  default = "ea-pro-duct-259"
+  default = "<system_name>"
 }
 
 variable "account_number" {
-  default = "777999222999"
+  default = "<account_number>"
 }

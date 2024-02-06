@@ -24,8 +24,7 @@ func NewDensifyDataSourceCloud() datasource.DataSource {
 
 // densifyDataSource is the data source implementation.
 type densifyDataSourceCloud struct {
-	// client  *hashicups.Client
-	client *densify.Client
+	client *densify.DensifyClient
 }
 
 // densifyRecoModel maps Densify Recommendation schema data.
@@ -103,7 +102,7 @@ func (d *densifyDataSourceCloud) Configure(ctx context.Context, req datasource.C
 		return
 	}
 
-	client, ok := req.ProviderData.(*densify.Client)
+	client, ok := req.ProviderData.(*densify.DensifyClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -163,45 +162,6 @@ func (d *densifyDataSourceCloud) Read(ctx context.Context, req datasource.ReadRe
 		state.ApprovalType = types.StringValue(reco.ApprovalType)
 		state.SavingsEstimate = types.Float64Value(float64(reco.SavingsEstimate))
 		state.EffortEstimate = types.StringValue(reco.EffortEstimate)
-
-		// recoState := densifyDataSourceModel{
-		// 	EntityId:        types.StringValue(reco.EntityId),
-		// 	Name:            types.StringValue(reco.Name),
-		// 	CurrentType:     types.StringValue(reco.CurrentType),
-		// 	RecommendedType: types.StringValue(reco.RecommendedType),
-		// ID:          types.Int64Value(int64(coffee.ID)),
-		// Teaser:      types.StringValue(coffee.Teaser),
-		// Description: types.StringValue(coffee.Description),
-		// Price:       types.Float64Value(coffee.Price),
-		// Image:       types.StringValue(coffee.Image),
-		// }
-		// for _, ingredient := range coffee.Ingredient {
-		// 	recoState.Ingredients = append(coffeeState.Ingredients, coffeesIngredientsModel{
-		// 		ID: types.Int64Value(int64(ingredient.ID)),
-		// 	})
-		// }
-		// state.Recommendation = append(state.Recommendation, recoState)
-
-		// for _, reco := range *reco {
-		// 	recoState := densifyRecoModel{
-		// 		EntityId: types.StringValue(reco.EntityId),
-		// 		Name:     types.StringValue(reco.Name),
-		// 		// ID:          types.Int64Value(int64(coffee.ID)),
-		// 		// Teaser:      types.StringValue(coffee.Teaser),
-		// 		// Description: types.StringValue(coffee.Description),
-		// 		// Price:       types.Float64Value(coffee.Price),
-		// 		// Image:       types.StringValue(coffee.Image),
-		// 	}
-
-		// 	// for _, ingredient := range coffee.Ingredient {
-		// 	// 	recoState.Ingredients = append(coffeeState.Ingredients, coffeesIngredientsModel{
-		// 	// 		ID: types.Int64Value(int64(ingredient.ID)),
-		// 	// 	})
-		// 	// }
-
-		// 	state.Recommendations = append(state.Recommendations, recoState)
-		// }
-
 	}
 
 	// Set state

@@ -24,13 +24,11 @@ func NewDensifyDataSourceContainer() datasource.DataSource {
 
 // densifyDataSource is the data source implementation.
 type densifyDataSourceContainer struct {
-	// client  *hashicups.Client
-	client *densify.Client
+	client *densify.DensifyClient
 }
 
 // densifyRecoModel maps coffees schema data.
 type densifyDataSourcePodModel struct {
-	// EntityId   types.Int64  `tfsdk:"entityId"`
 	EntityId types.String `tfsdk:"entity_id"`
 	Name     types.String `tfsdk:"name"`
 	// OptimizationType types.String `tfsdk:"optimization_type"`
@@ -172,7 +170,7 @@ func (d *densifyDataSourceContainer) Configure(ctx context.Context, req datasour
 		return
 	}
 
-	client, ok := req.ProviderData.(*densify.Client)
+	client, ok := req.ProviderData.(*densify.DensifyClient)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",

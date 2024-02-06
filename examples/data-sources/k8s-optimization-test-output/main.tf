@@ -10,12 +10,12 @@ terraform {
 
 provider "densify" {
   tech_platform   = "kubernetes"
-  cluster         = "k8master"
-  namespace       = "qa-llc"
+  cluster         = "<cluster-name>"
+  namespace       = "<namespace>"
   controller_type = "deployment"
-  pod_name        = "webserver-deployment"
+  pod_name        = "<pod_name>"
 
-  # container_name  = "den-web"
+  # container_name  = "<container-name>"
   # continue_if_error = true
 }
 
@@ -23,5 +23,5 @@ data "densify_container" "reco" {}
 
 output "data_container" {
   value = data.densify_container.reco
-  # value = data.densify_container.reco.containers.den-web.rec_cpu_req
+  # value = data.densify_container.reco.containers.<container-name>.rec_cpu_req
 }
