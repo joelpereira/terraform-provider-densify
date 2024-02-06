@@ -29,6 +29,31 @@ func New(version string) func() provider.Provider {
 	}
 }
 
+// Densify API query configuration settings
+type DensifySettings struct {
+	instance     string
+	username     string
+	password     string
+	timeout      int
+	techPlatform string
+	// cloud
+	accountName          string
+	accountNumber        string
+	systemName           string
+	fallbackInstanceType string
+	continueIfError      bool
+	// containers/k8s
+	cluster        string
+	namespace      string
+	controllerType string
+	podName        string
+	containerName  string
+	fallbackCPUReq string
+	fallbackCPULim string
+	fallbackMemReq string
+	fallbackMemLim string
+}
+
 // densifyProvider is the provider implementation.
 type densifyProvider struct {
 	// version is set to the provider version on release, "dev" when the
@@ -87,7 +112,7 @@ func (p *densifyProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 			},
 			"tech_platform": schema.StringAttribute{
 				Optional:    true,
-				Description: "Which Cloud Service Provider (CSP) / technology platform to use for the Densify API. May also be provided via DENSIFY_TECH_PLATFORM. Accepted values are: aws, azure, gcp, k8s.",
+				Description: "Which Cloud Service Provider (CSP) / technology platform to use for the Densify API. May also be provided via DENSIFY_TECH_PLATFORM. Accepted values are: aws, azure, gcp, k8s, kubernetes.",
 			},
 
 			// cloud parameters.
@@ -164,9 +189,119 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
+	// validate all the config parameters for the provider
+	config.ValidateProviderParameters(resp)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Default values to environment variables, but override with Terraform configuration value if set.
+	densifysettings := DensifySettings{}
+	tflog.Debug(ctx, "Loading Densify Settings from Environment Variables")
+	densifysettings.LoadEnvironmentVariablesSettings(config)
+	tflog.Debug(ctx, "Loading Densify Settings from Provider config")
+	densifysettings.LoadConfigSettings(config)
+	tflog.Debug(ctx, "Validating Densify Settings have all the required values")
+	densifysettings.ValidateSettings(resp)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Send variables to log
+	ctx = tflog.SetField(ctx, "densify_instance", densifysettings.instance)
+	ctx = tflog.SetField(ctx, "densify_username", densifysettings.username)
+	ctx = tflog.SetField(ctx, "densify_password", densifysettings.password)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "densify_password")
+	ctx = tflog.SetField(ctx, "densify_tech_platform", densifysettings.techPlatform)
+	ctx = tflog.SetField(ctx, "densify_account_name", densifysettings.accountName)
+	ctx = tflog.SetField(ctx, "densify_account_number", densifysettings.accountNumber)
+	ctx = tflog.SetField(ctx, "densify_system_name", densifysettings.systemName)
+	ctx = tflog.SetField(ctx, "densify_fallback_instance_type", densifysettings.fallbackInstanceType)
+	ctx = tflog.SetField(ctx, "densify_continue_if_error", densifysettings.continueIfError)
+	ctx = tflog.SetField(ctx, "densify_cluster", densifysettings.cluster)
+	ctx = tflog.SetField(ctx, "densify_namespace", densifysettings.namespace)
+	ctx = tflog.SetField(ctx, "densify_controller_type", densifysettings.controllerType)
+	ctx = tflog.SetField(ctx, "densify_pod_name", densifysettings.podName)
+	ctx = tflog.SetField(ctx, "densify_container_name", densifysettings.containerName)
+	ctx = tflog.SetField(ctx, "densify_fallback_cpu_req", densifysettings.fallbackCPUReq)
+	ctx = tflog.SetField(ctx, "densify_fallback_cpu_lim", densifysettings.fallbackCPULim)
+	ctx = tflog.SetField(ctx, "densify_fallback_mem_req", densifysettings.fallbackMemReq)
+	ctx = tflog.SetField(ctx, "densify_fallback_mem_lim", densifysettings.fallbackMemLim)
+	tflog.Debug(ctx, "Creating Densify API client")
+
+	// Create a new Densify client using the configuration values.
+	client, err := densify.NewDensifyClient(&densifysettings.instance, &densifysettings.username, &densifysettings.password, densifysettings.timeout)
+	if err != nil && !densifysettings.continueIfError {
+		resp.Diagnostics.AddError(
+			"Unable to Create Densify API Client",
+			"An unexpected error occurred when creating the Densify API client. "+
+				"If the error is not clear, please contact the provider developers.\n\n"+
+				"Densify Client Error: "+err.Error(),
+		)
+		return
+	}
+
+	// set configuration for Densify API Client
+	densifyAPIQuery := densify.DensifyAPIQuery{
+		AnalysisTechnology: densifysettings.techPlatform,
+		AccountName:        densifysettings.accountName,
+		AccountNumber:      densifysettings.accountNumber,
+		SystemName:         densifysettings.systemName,
+		FallbackInstance:   densifysettings.fallbackInstanceType,
+		SkipErrors:         densifysettings.continueIfError,
+
+		K8sCluster:        densifysettings.cluster,
+		K8sNamespace:      densifysettings.namespace,
+		K8sControllerType: densifysettings.controllerType,
+		K8sPodName:        densifysettings.podName,
+		K8sContainerName:  densifysettings.containerName,
+
+		FallbackCPURequest: densifysettings.fallbackCPUReq,
+		FallbackCPULimit:   densifysettings.fallbackCPULim,
+		FallbackMemRequest: densifysettings.fallbackMemReq,
+		FallbackMemLimit:   densifysettings.fallbackMemLim,
+	}
+
+	tflog.Debug(ctx, "Validating Densify client query")
+	err = client.ConfigureQuery(&densifyAPIQuery)
+	if err != nil && !densifysettings.continueIfError {
+		resp.Diagnostics.AddError(
+			"Unable to create Densify query",
+			"An unexpected error occurred when creating the Densify API query. "+
+				"If the error is not clear, please contact the provider developers.\n\n"+
+				"Densify Client Query Error: "+err.Error(),
+		)
+		return
+	}
+	tflog.Debug(ctx, "Validated Densify client query")
+
+	// Make the Densify client available during DataSource and Resource type Configure methods.
+	resp.DataSourceData = client
+	resp.ResourceData = client
+
+	tflog.Debug(ctx, "Configured Densify client", map[string]any{"success": true})
+}
+
+// DataSources defines the data sources implemented in the provider.
+func (p *densifyProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	tflog.Trace(ctx, "Densify client DataSources")
+	return []func() datasource.DataSource{
+		NewDensifyDataSourceCloud,
+		NewDensifyDataSourceContainer,
+	}
+}
+
+// Resources defines the resources implemented in the provider.
+func (p *densifyProvider) Resources(ctx context.Context) []func() resource.Resource {
+	tflog.Trace(ctx, "Densify client Resources")
+	return []func() resource.Resource{}
+}
+
+func (config *densifyProviderModel) ValidateProviderParameters(resp *provider.ConfigureResponse) {
 	// If practitioner provided a configuration value for any of the
 	// attributes, it must be a known value.
-
 	if config.DensifyInstance.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("densify_instance"),
@@ -208,41 +343,33 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		if config.K8sCluster.IsUnknown() {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("cluster"),
-				"Unknown k8s cluster",
-				"The provider cannot create the Densify API client as there is an unknown configuration value for the Densify API username. "+
-					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_USERNAME environment variable.",
+				"Unknown Kubernetes Cluster",
+				"The provider cannot create the Densify API client as there is an unknown configuration value for the Kubernetes Cluster. "+
+					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_CLUSTER environment variable.",
 			)
 		}
-		if config.Username.IsUnknown() {
+		if config.K8sNamespace.IsUnknown() {
 			resp.Diagnostics.AddAttributeError(
-				path.Root("username"),
-				"Unknown Densify API Username",
-				"The provider cannot create the Densify API client as there is an unknown configuration value for the Densify API username. "+
-					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_USERNAME environment variable.",
+				path.Root("namespace"),
+				"Unknown Kubernetes Namespace",
+				"The provider cannot create the Densify API client as there is an unknown configuration value for the Kubernetes Namespace. "+
+					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_NAMESPACE environment variable.",
 			)
 		}
-		if config.Username.IsUnknown() {
+		if config.K8sControllerType.IsUnknown() {
 			resp.Diagnostics.AddAttributeError(
-				path.Root("username"),
-				"Unknown Densify API Username",
-				"The provider cannot create the Densify API client as there is an unknown configuration value for the Densify API username. "+
-					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_USERNAME environment variable.",
+				path.Root("controller_type"),
+				"Unknown Kubernetes Controller Type",
+				"The provider cannot create the Densify API client as there is an unknown configuration value for the Kubernetes Controller Type. "+
+					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_CONTROLLER_TYPE environment variable.",
 			)
 		}
-		if config.Username.IsUnknown() {
+		if config.K8sPodName.IsUnknown() {
 			resp.Diagnostics.AddAttributeError(
-				path.Root("username"),
-				"Unknown Densify API Username",
-				"The provider cannot create the Densify API client as there is an unknown configuration value for the Densify API username. "+
-					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_USERNAME environment variable.",
-			)
-		}
-		if config.Username.IsUnknown() {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("username"),
-				"Unknown Densify API Username",
-				"The provider cannot create the Densify API client as there is an unknown configuration value for the Densify API username. "+
-					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_USERNAME environment variable.",
+				path.Root("pod_name"),
+				"Unknown Kubernetes Pod Name",
+				"The provider cannot create the Densify API client as there is an unknown configuration value for the Kubernetes Pod Name. "+
+					"Either target apply the source of the value first, set the value statically in the configuration, or use the DENSIFY_POD_NAME environment variable.",
 			)
 		}
 	} else { // CLOUD.
@@ -263,96 +390,98 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 			)
 		}
 	}
+}
 
-	if resp.Diagnostics.HasError() {
-		return
-	}
+// Load Densify settings from Environment Variables
+func (densifysettings *DensifySettings) LoadEnvironmentVariablesSettings(config densifyProviderModel) {
+	// set default timeout;
+	// TODO: Add timeout parameter
+	densifysettings.timeout = 30
 
-	// Default values to environment variables, but override with Terraform configuration value if set.
-
-	instance := os.Getenv("DENSIFY_INSTANCE")
-	username := os.Getenv("DENSIFY_USERNAME")
-	password := os.Getenv("DENSIFY_PASSWORD")
-	techPlatform := os.Getenv("DENSIFY_TECH_PLATFORM")
-	accountName := os.Getenv("DENSIFY_ACCOUNT_NAME")
-	accountNumber := os.Getenv("DENSIFY_ACCOUNT_NUMBER")
-	systemName := os.Getenv("DENSIFY_SYSTEM_NAME")
-	fallbackInstanceType := os.Getenv("DENSIFY_FALLBACK_INSTANCE_TYPE")
-	continueIfError := false
+	densifysettings.instance = os.Getenv("DENSIFY_INSTANCE")
+	densifysettings.username = os.Getenv("DENSIFY_USERNAME")
+	densifysettings.password = os.Getenv("DENSIFY_PASSWORD")
+	densifysettings.techPlatform = os.Getenv("DENSIFY_TECH_PLATFORM")
+	densifysettings.accountName = os.Getenv("DENSIFY_ACCOUNT_NAME")
+	densifysettings.accountNumber = os.Getenv("DENSIFY_ACCOUNT_NUMBER")
+	densifysettings.systemName = os.Getenv("DENSIFY_SYSTEM_NAME")
+	densifysettings.fallbackInstanceType = os.Getenv("DENSIFY_FALLBACK_INSTANCE_TYPE")
+	densifysettings.continueIfError = false // default is false
 	if strings.ToLower(os.Getenv("DENSIFY_CONTINUE_IF_ERROR")) == "true" {
-		continueIfError = true
+		densifysettings.continueIfError = true
 	}
+	densifysettings.cluster = os.Getenv("DENSIFY_CLUSTER")
+	densifysettings.namespace = os.Getenv("DENSIFY_NAMESPACE")
+	densifysettings.controllerType = os.Getenv("DENSIFY_CONTROLLER_TYPE")
+	densifysettings.podName = os.Getenv("DENSIFY_POD_NAME")
+	densifysettings.containerName = os.Getenv("DENSIFY_CONTAINER_NAME")
+}
 
-	cluster := os.Getenv("DENSIFY_CLUSTER")
-	namespace := os.Getenv("DENSIFY_NAMESPACE")
-	controllerType := os.Getenv("DENSIFY_CONTROLLER_TYPE")
-	podName := os.Getenv("DENSIFY_POD_NAME")
-	containerName := os.Getenv("DENSIFY_CONTAINER_NAME")
-	var fallbackCPUReq string = ""
-	var fallbackCPULim string = ""
-	var fallbackMemReq string = ""
-	var fallbackMemLim string = ""
-
+// Load Densify settings from Config provided by the user for the Terraform Provider
+func (densifysettings *DensifySettings) LoadConfigSettings(config densifyProviderModel) {
 	if !config.DensifyInstance.IsNull() {
-		instance = config.DensifyInstance.ValueString()
+		densifysettings.instance = config.DensifyInstance.ValueString()
 	}
 	if !config.Username.IsNull() {
-		username = config.Username.ValueString()
+		densifysettings.username = config.Username.ValueString()
 	}
 	if !config.Password.IsNull() {
-		password = config.Password.ValueString()
+		densifysettings.password = config.Password.ValueString()
 	}
 	if !config.TechPlatform.IsNull() {
-		techPlatform = config.TechPlatform.ValueString()
+		densifysettings.techPlatform = config.TechPlatform.ValueString()
 	}
 	if !config.AccountNumber.IsNull() {
-		accountNumber = config.AccountNumber.ValueString()
+		densifysettings.accountNumber = config.AccountNumber.ValueString()
 	}
 	if !config.AccountName.IsNull() {
-		accountName = config.AccountName.ValueString()
+		densifysettings.accountName = config.AccountName.ValueString()
 	}
 	if !config.SystemName.IsNull() {
-		systemName = config.SystemName.ValueString()
+		densifysettings.systemName = config.SystemName.ValueString()
 	}
 	if !config.FallbackInstanceType.IsNull() {
-		fallbackInstanceType = config.FallbackInstanceType.ValueString()
+		densifysettings.fallbackInstanceType = config.FallbackInstanceType.ValueString()
 	}
 	if !config.ContinueIfError.IsNull() {
-		continueIfError = config.ContinueIfError.ValueBool()
+		densifysettings.continueIfError = config.ContinueIfError.ValueBool()
 	}
 
 	if !config.K8sCluster.IsNull() {
-		cluster = config.K8sCluster.ValueString()
+		densifysettings.cluster = config.K8sCluster.ValueString()
 	}
 	if !config.K8sNamespace.IsNull() {
-		namespace = config.K8sNamespace.ValueString()
+		densifysettings.namespace = config.K8sNamespace.ValueString()
 	}
 	if !config.K8sControllerType.IsNull() {
-		controllerType = config.K8sControllerType.ValueString()
+		densifysettings.controllerType = config.K8sControllerType.ValueString()
 	}
 	if !config.K8sPodName.IsNull() {
-		podName = config.K8sPodName.ValueString()
+		densifysettings.podName = config.K8sPodName.ValueString()
 	}
 	if !config.K8sContainerName.IsNull() {
-		containerName = config.K8sContainerName.ValueString()
+		densifysettings.containerName = config.K8sContainerName.ValueString()
 	}
 
 	if !config.K8sFallbackCPUReq.IsNull() {
-		fallbackCPUReq = config.K8sFallbackCPUReq.ValueString()
+		densifysettings.fallbackCPUReq = config.K8sFallbackCPUReq.ValueString()
 	}
 	if !config.K8sFallbackCPULim.IsNull() {
-		fallbackCPULim = config.K8sFallbackCPULim.ValueString()
+		densifysettings.fallbackCPULim = config.K8sFallbackCPULim.ValueString()
 	}
 	if !config.K8sFallbackMemReq.IsNull() {
-		fallbackMemReq = config.K8sFallbackMemReq.ValueString()
+		densifysettings.fallbackMemReq = config.K8sFallbackMemReq.ValueString()
 	}
 	if !config.K8sFallbackMemLim.IsNull() {
-		fallbackMemLim = config.K8sFallbackMemLim.ValueString()
+		densifysettings.fallbackMemLim = config.K8sFallbackMemLim.ValueString()
 	}
+}
 
+// Load Densify settings from Config provided by the user for the Terraform Provider
+func (densifysettings *DensifySettings) ValidateSettings(resp *provider.ConfigureResponse) {
 	// If any of the expected configurations are missing, return errors with provider-specific guidance.
 
-	if instance == "" {
+	if densifysettings.instance == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("densify_instance"),
 			"Missing Densify API Instance Name",
@@ -362,7 +491,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
-	if username == "" {
+	if densifysettings.username == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("username"),
 			"Missing Densify API Username",
@@ -372,7 +501,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
-	if password == "" {
+	if densifysettings.password == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("password"),
 			"Missing Densify API Password",
@@ -382,7 +511,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
-	if techPlatform == "" {
+	if densifysettings.techPlatform == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("tech_platform"),
 			"Missing Densify API Technology Platform",
@@ -393,8 +522,8 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	// KUBERNETES/CONTAINERS.
-	if strings.ToLower(techPlatform) == "k8s" || strings.ToLower(techPlatform) == "kubernetes" {
-		if cluster == "" {
+	if strings.ToLower(densifysettings.techPlatform) == "k8s" || strings.ToLower(densifysettings.techPlatform) == "kubernetes" {
+		if densifysettings.cluster == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("cluster"),
 				"Missing Kubernetes Cluster Name",
@@ -403,7 +532,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 					"If either is already set, ensure the value is not empty.",
 			)
 		}
-		if namespace == "" {
+		if densifysettings.namespace == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("namespace"),
 				"Missing Kubernetes Namespace",
@@ -412,7 +541,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 					"If either is already set, ensure the value is not empty.",
 			)
 		}
-		if controllerType == "" {
+		if densifysettings.controllerType == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("controller_type"),
 				"Missing Kubernetes Cluster Name",
@@ -421,7 +550,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 					"If it is already set, ensure the value is not empty.",
 			)
 		}
-		if podName == "" {
+		if densifysettings.podName == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("pod_name"),
 				"Missing Kubernetes Pod Name",
@@ -432,7 +561,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		}
 
 	} else {
-		if accountName == "" && accountNumber == "" {
+		if densifysettings.accountName == "" && densifysettings.accountNumber == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("account_number"),
 				"Missing Densify API Account Name/Number",
@@ -441,7 +570,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 					"If either is already set, ensure the value is not empty.",
 			)
 		}
-		if systemName == "" {
+		if densifysettings.systemName == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("system_name"),
 				"Missing Densify System Name",
@@ -451,96 +580,4 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 			)
 		}
 	}
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	ctx = tflog.SetField(ctx, "densify_instance", instance)
-	ctx = tflog.SetField(ctx, "densify_username", username)
-	ctx = tflog.SetField(ctx, "densify_password", password)
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "densify_password")
-	ctx = tflog.SetField(ctx, "densify_tech_platform", techPlatform)
-	ctx = tflog.SetField(ctx, "densify_account_name", accountName)
-	ctx = tflog.SetField(ctx, "densify_account_number", accountNumber)
-	ctx = tflog.SetField(ctx, "densify_system_name", systemName)
-	ctx = tflog.SetField(ctx, "densify_fallback_instance_type", fallbackInstanceType)
-	ctx = tflog.SetField(ctx, "densify_continue_if_error", continueIfError)
-	ctx = tflog.SetField(ctx, "densify_cluster", cluster)
-	ctx = tflog.SetField(ctx, "densify_namespace", namespace)
-	ctx = tflog.SetField(ctx, "densify_controller_type", controllerType)
-	ctx = tflog.SetField(ctx, "densify_pod_name", podName)
-	ctx = tflog.SetField(ctx, "densify_container_name", containerName)
-	ctx = tflog.SetField(ctx, "densify_fallback_cpu_req", fallbackCPUReq)
-	ctx = tflog.SetField(ctx, "densify_fallback_cpu_lim", fallbackCPULim)
-	ctx = tflog.SetField(ctx, "densify_fallback_mem_req", fallbackMemReq)
-	ctx = tflog.SetField(ctx, "densify_fallback_mem_lim", fallbackMemLim)
-	tflog.Debug(ctx, "Creating Densify API client")
-
-	// Create a new Densify client using the configuration values.
-	client, err := densify.NewClient(&instance, &username, &password)
-	if err != nil && !continueIfError {
-		resp.Diagnostics.AddError(
-			"Unable to Create Densify API Client",
-			"An unexpected error occurred when creating the Densify API client. "+
-				"If the error is not clear, please contact the provider developers.\n\n"+
-				"Densify Client Error: "+err.Error(),
-		)
-		return
-	}
-
-	// set configuration for densify api.
-	densifyAPIQuery := densify.DensifyAPIQuery{
-		AnalysisTechnology: techPlatform,
-		AccountName:        accountName,
-		AccountNumber:      accountNumber,
-		SystemName:         systemName,
-		FallbackInstance:   fallbackInstanceType,
-		SkipErrors:         continueIfError,
-
-		K8sCluster:        cluster,
-		K8sNamespace:      namespace,
-		K8sControllerType: controllerType,
-		K8sPodName:        podName,
-		K8sContainerName:  containerName,
-
-		FallbackCPURequest: fallbackCPUReq,
-		FallbackCPULimit:   fallbackCPULim,
-		FallbackMemRequest: fallbackMemReq,
-		FallbackMemLimit:   fallbackMemLim,
-	}
-
-	tflog.Debug(ctx, "Validating Densify client query")
-	err = client.ConfigureQuery(&densifyAPIQuery)
-	if err != nil && !continueIfError {
-		resp.Diagnostics.AddError(
-			"Unable to create Densify query",
-			"An unexpected error occurred when creating the Densify API query. "+
-				"If the error is not clear, please contact the provider developers.\n\n"+
-				"Densify Client Query Error: "+err.Error(),
-		)
-		return
-	}
-	tflog.Debug(ctx, "Validated Densify client query")
-
-	// Make the Densify client available during DataSource and Resource type Configure methods.
-	resp.DataSourceData = client
-	resp.ResourceData = client
-
-	tflog.Debug(ctx, "Configured Densify client", map[string]any{"success": true})
-}
-
-// DataSources defines the data sources implemented in the provider.
-func (p *densifyProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	tflog.Trace(ctx, "Densify client DataSources")
-	return []func() datasource.DataSource{
-		NewDensifyDataSourceCloud,
-		NewDensifyDataSourceContainer,
-	}
-}
-
-// Resources defines the resources implemented in the provider.
-func (p *densifyProvider) Resources(ctx context.Context) []func() resource.Resource {
-	tflog.Trace(ctx, "Densify client Resources")
-	return []func() resource.Resource{}
 }

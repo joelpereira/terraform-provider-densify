@@ -4,6 +4,8 @@
 example.tf
 terraform.tfplan
 terraform.tfstate
+.vscode/
+.vscode/.gitattributes/
 bin/
 dist/
 modules-dev/

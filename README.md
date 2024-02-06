@@ -1,6 +1,5 @@
 ![Latest Stable Version](https://img.shields.io/github/v/release/joelpereira/terraform-provider-densify?label=Version)
 ![test action workflow](https://github.com/joelpereira/terraform-provider-densify/actions/workflows/test.yml/badge.svg?branch=main)
-![release action workflow](https://github.com/joelpereira/terraform-provider-densify/actions/workflows/release.yml/badge.svg)
 ![GitHub issues](https://img.shields.io/github/issues/joelpereira/terraform-provider-densify)
 ![GitHub](https://img.shields.io/github/license/joelpereira/terraform-provider-densify)
 
@@ -165,29 +164,12 @@ Apache 2 Licensed. See LICENSE for full details.
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.21
 
-## Building The Provider
-
-1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the Go `install` command:
-
-```shell
-go install .
-```
-
-## Developing the Provider
+## Building the Provider
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
 
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+To compile & install the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+
+To compile the provider as an executable, run `go build`.
 
 To generate or update documentation, run `go generate`.
-
-In order to run the full suite of Acceptance tests, run `make testacc`.
-
-*Note:* Acceptance tests create real resources, and often cost money to run.
-
-```shell
-make testacc
-```
-
