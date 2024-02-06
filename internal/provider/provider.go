@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -67,6 +68,7 @@ type densifyProviderModel struct {
 	DensifyInstance      types.String `tfsdk:"densify_instance"`
 	Username             types.String `tfsdk:"username"`
 	Password             types.String `tfsdk:"password"`
+	ApiTimeout           types.Int64  `tfsdk:"api_timeout"`
 	TechPlatform         types.String `tfsdk:"tech_platform"`
 	AccountNumber        types.String `tfsdk:"account_number"`
 	AccountName          types.String `tfsdk:"account_name"`
@@ -99,20 +101,24 @@ func (p *densifyProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"densify_instance": schema.StringAttribute{
 				Optional:    true,
-				Description: "URI for your Densify instance. May also be provided via DENSIFY_INSTANCE. Ex. https://instance.densify.com:8443",
+				Description: "URI for your Densify instance. May also be provided via DENSIFY_INSTANCE environment variable. Ex. https://instance.densify.com:8443",
 			},
 			"username": schema.StringAttribute{
 				Optional:    true,
-				Description: "Username to authenticate to Densify API. May also be provided via DENSIFY_USERNAME. Contact your Account Manager to request a service account details.",
+				Description: "Username to authenticate to Densify API. May also be provided via DENSIFY_USERNAME environment variable. Contact your Account Manager to request a service account details.",
 			},
 			"password": schema.StringAttribute{
 				Optional:    true,
 				Sensitive:   true,
-				Description: "Password to authenticate to Densify API. May also be provided via DENSIFY_PASSWORD. Contact your Account Manager to request a service account details.",
+				Description: "Password to authenticate to Densify API. May also be provided via DENSIFY_PASSWORD environment variable. Contact your Account Manager to request a service account details.",
+			},
+			"api_timeout": schema.Int64Attribute{
+				Optional:    true,
+				Description: "The Densify API timeout. The default value is 30 seconds but this can be adjusted via the DENSIFY_API_TIMEOUT environment variable.",
 			},
 			"tech_platform": schema.StringAttribute{
 				Optional:    true,
-				Description: "Which Cloud Service Provider (CSP) / technology platform to use for the Densify API. May also be provided via DENSIFY_TECH_PLATFORM. Accepted values are: aws, azure, gcp, k8s, kubernetes.",
+				Description: "Which Cloud Service Provider (CSP) / technology platform to use for the Densify API. May also be provided via DENSIFY_TECH_PLATFORM environment variable. Accepted values are: aws, azure, gcp, k8s, kubernetes.",
 			},
 
 			// cloud parameters.
@@ -214,6 +220,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 	ctx = tflog.SetField(ctx, "densify_username", densifysettings.username)
 	ctx = tflog.SetField(ctx, "densify_password", densifysettings.password)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "densify_password")
+	ctx = tflog.SetField(ctx, "densify_api_timeout", densifysettings.timeout)
 	ctx = tflog.SetField(ctx, "densify_tech_platform", densifysettings.techPlatform)
 	ctx = tflog.SetField(ctx, "densify_account_name", densifysettings.accountName)
 	ctx = tflog.SetField(ctx, "densify_account_number", densifysettings.accountNumber)
@@ -394,10 +401,16 @@ func (config *densifyProviderModel) ValidateProviderParameters(resp *provider.Co
 
 // Load Densify settings from Environment Variables.
 func (densifysettings *DensifySettings) LoadEnvironmentVariablesSettings(config densifyProviderModel) {
-	// set default timeout;
-	// TODO: Add timeout as a parameter
-	densifysettings.timeout = 30
-
+	// set default timeout (seconds);
+	tout := 45
+	// gracefully handle if the timeout is not a valid int.
+	if val, err := strconv.Atoi(os.Getenv("DENSIFY_API_TIMEOUT")); err == nil {
+		// make sure the timeout (seconds) is between 1-300 (5 mins) seconds.
+		if val >= 1 && val <= 300 {
+			tout = val
+		}
+	}
+	densifysettings.timeout = tout
 	densifysettings.instance = os.Getenv("DENSIFY_INSTANCE")
 	densifysettings.username = os.Getenv("DENSIFY_USERNAME")
 	densifysettings.password = os.Getenv("DENSIFY_PASSWORD")
@@ -427,6 +440,9 @@ func (densifysettings *DensifySettings) LoadConfigSettings(config densifyProvide
 	}
 	if !config.Password.IsNull() {
 		densifysettings.password = config.Password.ValueString()
+	}
+	if !config.ApiTimeout.IsNull() {
+		densifysettings.timeout = int(config.ApiTimeout.ValueInt64())
 	}
 	if !config.TechPlatform.IsNull() {
 		densifysettings.techPlatform = config.TechPlatform.ValueString()
