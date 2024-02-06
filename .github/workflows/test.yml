@@ -31,7 +31,7 @@ jobs:
       - run: go mod download
       - run: go build -v .
       - name: Run linters
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v3.7.0
         with:
           # Require: The version of golangci-lint to use.
           # When `install-mode` is `binary` (default) the value can be v1.2 or v1.2.3 or `latest` to use the latest version.
@@ -55,10 +55,10 @@ jobs:
           skip-cache: true
 
           # Optional: if set to true, then the action won't cache or restore ~/go/pkg.
-          skip-pkg-cache: true
+          # skip-pkg-cache: true
 
           # Optional: if set to true, then the action won't cache or restore ~/.cache/go-build.
-          skip-build-cache: true
+          # skip-build-cache: true
 
           # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
           # install-mode: "goinstall"
