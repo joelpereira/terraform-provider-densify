@@ -29,20 +29,20 @@ func New(version string) func() provider.Provider {
 	}
 }
 
-// Densify API query configuration settings
+// Densify API query configuration settings.
 type DensifySettings struct {
 	instance     string
 	username     string
 	password     string
 	timeout      int
 	techPlatform string
-	// cloud
+	// cloud.
 	accountName          string
 	accountNumber        string
 	systemName           string
 	fallbackInstanceType string
 	continueIfError      bool
-	// containers/k8s
+	// containers/k8s.
 	cluster        string
 	namespace      string
 	controllerType string
@@ -189,7 +189,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	// validate all the config parameters for the provider
+	// validate all the config parameters for the provider.
 	config.ValidateProviderParameters(resp)
 
 	if resp.Diagnostics.HasError() {
@@ -209,7 +209,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	// Send variables to log
+	// Send variables to log.
 	ctx = tflog.SetField(ctx, "densify_instance", densifysettings.instance)
 	ctx = tflog.SetField(ctx, "densify_username", densifysettings.username)
 	ctx = tflog.SetField(ctx, "densify_password", densifysettings.password)
@@ -243,7 +243,7 @@ func (p *densifyProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	// set configuration for Densify API Client
+	// set configuration for Densify API Client.
 	densifyAPIQuery := densify.DensifyAPIQuery{
 		AnalysisTechnology: densifysettings.techPlatform,
 		AccountName:        densifysettings.accountName,
@@ -392,10 +392,10 @@ func (config *densifyProviderModel) ValidateProviderParameters(resp *provider.Co
 	}
 }
 
-// Load Densify settings from Environment Variables
+// Load Densify settings from Environment Variables.
 func (densifysettings *DensifySettings) LoadEnvironmentVariablesSettings(config densifyProviderModel) {
 	// set default timeout;
-	// TODO: Add timeout parameter
+	// TODO: Add timeout as a parameter
 	densifysettings.timeout = 30
 
 	densifysettings.instance = os.Getenv("DENSIFY_INSTANCE")
@@ -417,7 +417,7 @@ func (densifysettings *DensifySettings) LoadEnvironmentVariablesSettings(config 
 	densifysettings.containerName = os.Getenv("DENSIFY_CONTAINER_NAME")
 }
 
-// Load Densify settings from Config provided by the user for the Terraform Provider
+// Load Densify settings from Config provided by the user for the Terraform Provider.
 func (densifysettings *DensifySettings) LoadConfigSettings(config densifyProviderModel) {
 	if !config.DensifyInstance.IsNull() {
 		densifysettings.instance = config.DensifyInstance.ValueString()
@@ -477,7 +477,7 @@ func (densifysettings *DensifySettings) LoadConfigSettings(config densifyProvide
 	}
 }
 
-// Load Densify settings from Config provided by the user for the Terraform Provider
+// Load Densify settings from Config provided by the user for the Terraform Provider.
 func (densifysettings *DensifySettings) ValidateSettings(resp *provider.ConfigureResponse) {
 	// If any of the expected configurations are missing, return errors with provider-specific guidance.
 
