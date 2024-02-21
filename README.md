@@ -167,8 +167,16 @@ Apache 2 Licensed. See LICENSE for full details.
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
 
-To compile & install the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+To compile the provider as an executable (.exe), run `go build`.
 
-To compile the provider as an executable, run `go build`.
+To compile & install the provider, run the steps below to pull the required package(s) and this will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+```
+go get -u github.com/joelpereira/densify-api-client-go
+#or pull a specific/newer tag
+go get -u github.com/joelpereira/densify-api-client-go@v0.8.11
+
+go mod tidy
+go install .
+```
 
 To generate or update documentation, run `go generate`.
